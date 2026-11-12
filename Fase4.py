@@ -309,3 +309,129 @@ class Reserva(EntidadSistema):
                 f"Costo Total: ${self.costo_total:.2f}")
 
 
+# ==========================================
+# 6. SIMULADOR DE 10 OPERACIONES (Válidas e Inválidas)
+# ==========================================
+
+def ejecutar_simulacion():
+    print("=" * 70)
+    print(" INICIANDO SIMULACIÓN INTEGRAL - SOFTWARE FJ (SIN BASE DE DATOS)")
+    print("=" * 70)
+    
+    # Listas internas para gestión en memoria
+    clientes = []
+    servicios = []
+    reservas = []
+
+    # Operación 1: Registro VÁLIDO de cliente
+    print("\n[Operopación 1] Registro Válido de Cliente...")
+    try:
+        c1 = Cliente("C001", "Ana María Pérez", "ana.perez@email.com", "3104567890")
+        clientes.append(c1)
+        print(f"Éxito: {c1.obtener_detalles()}")
+    except Exception as e:
+        print(f"Error capturado: {e}")
+
+    # Operación 2: Registro INVÁLIDO de cliente (Correo incorrecto)
+    print("\n[Operación 2] Registro Inválido de Cliente (Correo erróneo)...")
+    try:
+        c2 = Cliente("C002", "Carlos Gómez", "correo_sin_arroba.com", "3201234567")
+        clientes.append(c2)
+    except ClienteInvalidoError as e:
+        print(f"Excepción controlada correctamente: {e}")
+        logging.warning(f"Operación 2 interceptada: {e}")
+
+    # Operación 3: Creación VÁLIDA de Servicio (Sala de Conferencias)
+    print("\n[Operación 3] Creación Válida de Servicio de Sala...")
+    try:
+        s1 = ReservaSala("S001", "Sala Ejecutiva Alpha", 50.0, capacidad=15)
+        servicios.append(s1)
+        print(f"Éxito: {s1.describir_servicio()}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+    # Operación 4: Creación INVÁLIDA de Servicio (Costo negativo)
+    print("\n[Operación 4] Creación Inválida de Servicio (Costo negativo)...")
+    try:
+        s_erroneo = AlquilerEquipo("S999", "Servidor Roto", -100.0, "SER-000")
+        servicios.append(s_erroneo)
+    except ServicioNoDisponibleError as e:
+        print(f"Excepción controlada correctamente: {e}")
+        logging.warning(f"Operación 4 interceptada: {e}")
+
+    # Operación 5: Creación VÁLIDA de Alquiler de Equipo y Asesoría
+    print("\n[Operación 5] Creación Válida de Alquiler de Equipo y Asesoría...")
+    try:
+        s2 = AlquilerEquipo("S002", "Kit de Realidad Virtual", 35.0, "VR-9982")
+        s3 = AsesoriaEspecializada("S003", "Arquitectura Cloud AWS", 120.0, "Cloud Computing")
+        servicios.extend([s2, s3])
+        print(f"Éxito: {s2.describir_servicio()}")
+        print(f"Éxito: {s3.describir_servicio()}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+    # Operación 6: Creación de Reserva VÁLIDA y Confirmación exitosa (con sobrecarga de parámetros)
+    print("\n[Operación 6] Reserva Válida y Confirmación con Cálculo Personalizado...")
+    try:
+        reserva1 = Reserva("R001", clientes[0], servicios[0], cantidad_tiempo=4)
+        reservas.append(reserva1)
+        # Confirmando reserva de sala por 4 horas, con 10% de descuento e impuestos
+        reserva1.confirmar_reserva(horas=4, incluir_impuesto=True, descuento_porcentaje=10.0)
+        print(f"Éxito: {reserva1.obtener_detalles()}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+    # Operación 7: Intento de Confirmación de Reserva con Servicio No Disponible (Error simulado)
+    print("\n[Operación 7] Reserva sobre servicio no disponible...")
+    try:
+        servicio_inactivo = ReservaSala("S004", "Sala en Mantenimiento", 40.0, 10)
+        servicio_inactivo.disponible = False
+        reserva_fallida = Reserva("R002", clientes[0], servicio_inactivo, cantidad_tiempo=2)
+        reserva_fallida.confirmar_reserva(horas=2, incluir_impuesto=True)
+    except (OperacionNoPermitidaError, ServicioNoDisponibleError) as e:
+        print(f"Excepción controlada correctamente: {e}")
+        logging.warning(f"Operación 7 interceptada: {e}")
+
+    # Operación 8: Confirmación válida de alquiler de equipo con seguro adicional
+    print("\n[Operación 8] Confirmación válida de alquiler de equipo...")
+    try:
+        reserva2 = Reserva("R003", clientes[0], servicios[1], cantidad_tiempo=3)
+        reservas.append(reserva2)
+        reserva2.confirmar_reserva(dias=3, seguro_adicional=True)
+        print(f"Éxito: {reserva2.obtener_detalles()}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+    # Operación 9: Cancelación válida de una reserva confirmada
+    print("\n[Operación 9] Cancelación válida de reserva confirmada...")
+    try:
+        reserva3 = Reserva("R004", clientes[0], servicios[2], cantidad_tiempo=2)
+        reservas.append(reserva3)
+        reserva3.confirmar_reserva(sesiones=2, nivel_senior=True)
+        reserva3.cancelar_reserva()
+        print(f"Éxito: {reserva3.obtener_detalles()}")
+    except Exception as e:
+        print(f"Error: {e}")
+
+    # Operación 10: Intento de procesar una reserva no confirmada (error controlado)
+    print("\n[Operación 10] Procesamiento inválido de reserva...")
+    try:
+        reserva4 = Reserva("R005", clientes[0], servicios[0], cantidad_tiempo=1)
+        reservas.append(reserva4)
+        reserva4.procesar_reserva()
+    except OperacionNoPermitidaError as e:
+        print(f"Excepción controlada correctamente: {e}")
+        logging.warning(f"Operación 10 interceptada: {e}")
+
+    print("\n" + "=" * 70)
+    print(" SIMULACIÓN FINALIZADA - RESÚMEN")
+    print("=" * 70)
+    print(f"Clientes registrados: {len(clientes)}")
+    print(f"Servicios creados: {len(servicios)}")
+    print(f"Reservas gestionadas: {len(reservas)}")
+    for item in reservas:
+        print(f"- {item.obtener_detalles()}")
+
+
+if __name__ == "__main__":
+    ejecutar_simulacion()
