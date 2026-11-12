@@ -110,3 +110,128 @@ class Cliente(EntidadSistema):
 # ==========================================
 # 4. CLASE ABSTRACTA SERVICIO Y DERIVADAS
 # ==========================================
+
+class Servicio(EntidadSistema, ABC):
+    """Clase abstracta Servicio que implementa polimorfismo."""
+    
+    def __init__(self, identificador: str, nombre_servicio: str, costo_base: float, disponible: bool = True):
+        super().__init__(identificador)
+        self.nombre_servicio = nombre_servicio
+        self.costo_base = costo_base
+        self.disponible = disponible
+
+    @property
+    def costo_base(self) -> float:
+        return self._costo_base
+
+    @costo_base.setter
+    def costo_base(self, valor: float):
+        if valor < 0:
+            raise ServicioNoDisponibleError("El costo base no puede ser negativo.")
+        self._costo_base = float(valor)
+
+    @abstractmethod
+    def calcular_costo(self, *args, **kwargs) -> float:
+        """Método polimórfico para calcular costos (admite sobrecarga simulada)."""
+        pass
+
+    @abstractmethod
+    def describir_servicio(self) -> str:
+        """Método polimórfico para describir el servicio."""
+        pass
+
+    def obtener_detalles(self) -> str:
+        estado = "Disponible" if self.disponible else "No Disponible"
+        return f"Servicio: {self.nombre_servicio} | Costo Base: ${self.costo_base:.2f} | Estado: {estado}"
+
+
+class ReservaSala(Servicio):
+    """Servicio especializado de reserva de salas."""
+    
+    def __init__(self, identificador: str, nombre_servicio: str, costo_base: float, capacidad: int):
+        super().__init__(identificador, nombre_servicio, costo_base)
+        self.capacidad = capacidad
+
+    @property
+    def capacidad(self) -> int:
+        return self._capacidad
+
+    @capacidad.setter
+    def capacidad(self, valor: int):
+        if valor <= 0:
+            raise ServicioNoDisponibleError("La capacidad de la sala debe ser mayor a 0.")
+        self._capacidad = valor
+
+    # Demostración de métodos sobrecargados (argumentos opcionales)
+    def calcular_costo(self, horas: int = 1, incluir_impuesto: bool = True, descuento_porcentaje: float = 0.0) -> float:
+        """Calcula costo de sala con horas, impuestos opcionales y descuentos."""
+        try:
+            if horas <= 0:
+                raise ValueError("Las horas de reserva deben ser mayores a cero.")
+            
+            subtotal = self.costo_base * horas
+            if descuento_porcentaje > 0:
+                subtotal -= subtotal * (descuento_porcentaje / 100.0)
+            
+            if incluir_impuesto:
+                subtotal *= 1.19  # IVA 19%
+            
+            return round(subtotal, 2)
+        except Exception as e:
+            raise ServicioNoDisponibleError(f"Error al calcular costo de sala: {e}") from e
+
+    def describir_servicio(self) -> str:
+        return f"[Reserva de Sala] {self.nombre_servicio} - Capacidad: {self.capacidad} personas. Costo base/hora: ${self.costo_base}"
+
+
+class AlquilerEquipo(Servicio):
+    """Servicio especializado de alquiler de equipos tecnológicos o de oficina."""
+    
+    def __init__(self, identificador: str, nombre_servicio: str, costo_base: float, serial_equipo: str):
+        super().__init__(identificador, nombre_servicio, costo_base)
+        self.serial_equipo = serial_equipo
+
+    def calcular_costo(self, dias: int = 1, seguro_adicional: bool = False) -> float:
+        """Calcula costo de alquiler por días con opción de seguro."""
+        try:
+            if dias <= 0:
+                raise ValueError("Los días de alquiler deben ser mayores a cero.")
+            
+            total = self.costo_base * dias
+            if seguro_adicional:
+                total += 15.0 * dias  # Tarifa fija de seguro por día
+            
+            return round(total, 2)
+        except Exception as e:
+            raise ServicioNoDisponibleError(f"Error al calcular costo de equipo: {e}") from e
+
+    def describir_servicio(self) -> str:
+        return f"[Alquiler de Equipo] {self.nombre_servicio} (Serial: {self.serial_equipo}). Costo base/día: ${self.costo_base}"
+
+
+class AsesoriaEspecializada(Servicio):
+    """Servicio especializado de asesorías profesionales."""
+    
+    def __init__(self, identificador: str, nombre_servicio: str, costo_base: float, area_experticia: str):
+        super().__init__(identificador, nombre_servicio, costo_base)
+        self.area_experticia = area_experticia
+
+    def calcular_costo(self, sesiones: int = 1, nivel_senior: bool = False) -> float:
+        """Calcula costo de asesorías según número de sesiones y nivel del experto."""
+        try:
+            if sesiones <= 0:
+                raise ValueError("El número de sesiones debe ser mayor a cero.")
+            
+            multiplicador = 1.5 if nivel_senior else 1.0
+            total = self.costo_base * sesiones * multiplicador
+            return round(total, 2)
+        except Exception as e:
+            raise ServicioNoDisponibleError(f"Error al calcular costo de asesoría: {e}") from e
+
+    def describir_servicio(self) -> str:
+        return f"[Asesoría Especializada] {self.nombre_servicio} en área {self.area_experticia}. Costo base/sesión: ${self.costo_base}"
+
+
+# ==========================================
+# 5. CLASE RESERVA
+# ==========================================
