@@ -235,3 +235,77 @@ class AsesoriaEspecializada(Servicio):
 # ==========================================
 # 5. CLASE RESERVA
 # ==========================================
+
+class Reserva(EntidadSistema):
+    """Integra cliente, servicio, duración y estado con manejo de excepciones y ciclos de vida."""
+    
+    ESTADOS = ["PENDIENTE", "CONFIRMADA", "CANCELADA", "PROCESADA"]
+
+    def __init__(self, identificador: str, cliente: Cliente, servicio: Servicio, cantidad_tiempo: int):
+        super().__init__(identificador)
+        self.cliente = cliente
+        self.servicio = servicio
+        self.cantidad_tiempo = cantidad_tiempo
+        self._estado = "PENDIENTE"
+        self.costo_total = 0.0
+
+    @property
+    def estado(self) -> str:
+        return self._estado
+
+    def confirmar_reserva(self, *args, **kwargs):
+        """Confirma la reserva aplicando el cálculo del servicio mediante polimorfismo y manejo completo de try/except/else/finally."""
+        try:
+            logging.info(f"Intentando confirmar reserva {self.identificador}...")
+            if not self.servicio.disponible:
+                raise OperacionNoPermitidaError(f"El servicio '{self.servicio.nombre_servicio}' no se encuentra disponible.")
+            if self._estado != "PENDIENTE":
+                raise OperacionNoPermitidaError(f"No se puede confirmar una reserva en estado '{self._estado}'.")
+            
+            # Cálculo polimórfico del costo utilizando kwargs o args dinámicos
+            self.costo_total = self.servicio.calcular_costo(*args, **kwargs)
+            self._estado = "CONFIRMADA"
+            
+        except (OperacionNoPermitidaError, ServicioNoDisponibleError) as e:
+            logging.error(f"Error de negocio al confirmar reserva {self.identificador}: {e}")
+            raise
+        except Exception as e:
+            logging.critical(f"Error inesperado al confirmar reserva {self.identificador}: {e}")
+            raise ReservaInvalidaError(f"Error crítico en confirmación: {e}") from e
+        else:
+            logging.info(f"Reserva {self.identificador} confirmada exitosamente. Costo Total: ${self.costo_total}")
+        finally:
+            logging.info(f"Finalizó el proceso de intento de confirmación para reserva {self.identificador}.")
+
+    def cancelar_reserva(self):
+        """Cancela una reserva activa o pendiente."""
+        try:
+            if self._estado == "CANCELADA":
+                raise OperacionNoPermitidaError("La reserva ya se encuentra cancelada.")
+            if self._estado == "PROCESADA":
+                raise OperacionNoPermitidaError("No se puede cancelar una reserva que ya fue procesada/ejecutada.")
+            
+            self._estado = "CANCELADA"
+            logging.info(f"Reserva {self.identificador} cancelada correctamente.")
+        except Exception as e:
+            logging.error(f"Fallo al cancelar la reserva {self.identificador}: {e}")
+            raise
+
+    def procesar_reserva(self):
+        """Procesa la reserva finalizando su ciclo."""
+        try:
+            if self._estado != "CONFIRMADA":
+                raise OperacionNoPermitidaError(f"Solo se pueden procesar reservas confirmadas. Estado actual: {self._estado}")
+            
+            self._estado = "PROCESADA"
+            logging.info(f"Reserva {self.identificador} procesada y finalizada con éxito.")
+        except Exception as e:
+            logging.error(f"Error al procesar reserva {self.identificador}: {e}")
+            raise
+
+    def obtener_detalles(self) -> str:
+        return (f"Reserva [ID: {self.identificador}] | Estado: {self._estado} | "
+                f"Cliente: {self.cliente.nombre} | Servicio: {self.servicio.nombre_servicio} | "
+                f"Costo Total: ${self.costo_total:.2f}")
+
+
