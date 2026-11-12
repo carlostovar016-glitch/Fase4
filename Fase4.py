@@ -38,3 +38,25 @@ class OperacionNoPermitidaError(ErrorSistemaFJ):
     """Excepción lanzada cuando se intenta realizar una operación prohibida por estado o lógica."""
     pass
 
+
+# ==========================================
+# 2. CLASE ABSTRACTA BASE
+# ==========================================
+
+class EntidadSistema(ABC):
+    """Clase abstracta que representa entidades generales del sistema."""
+    
+    def __init__(self, identificador: str):
+        self._identificador = identificador
+        self._fecha_creacion = datetime.now()
+
+    @property
+    def identificador(self) -> str:
+        return self._identificador
+
+    @abstractmethod
+    def obtener_detalles(self) -> str:
+        """Método abstracto para retornar los detalles de la entidad."""
+        pass
+
+
